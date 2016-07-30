@@ -1,5 +1,6 @@
-var mongoose = require('mongoose'),
-  Schema = mongoose.Schema;
+var mongoose = require('mongoose');
+mongoose.Promise = require('bluebird');
+var Schema = mongoose.Schema;
   
 var connection = mongoose.createConnection('mongodb://localhost/ziplink');
 
@@ -17,7 +18,7 @@ var userSchema = new Schema({
       required: true,
       enum: AUTH_PROVIDERS
     },
-    ID: {
+    id: {
       type: String,
       required: true,
       maxlength: [128, 'ID too long']
@@ -29,24 +30,15 @@ var userSchema = new Schema({
 /**
  * Find User by ID
  */
-userSchema.statics.findByAuthentication = function(authentication, callback) {
-  if(authentication.provider && authentication.ID){
-    this.findOne({'authentication.provider': authentication.provider, 'authentication.ID': authentication.ID}, function(err, user){
-      return callback(err, user);
-    });
-  } else {
-    var err = new Error('No user found from ID: ' + authentication.ID + ' and provider: ' + authentication.provider);
-    callback(err);
-  }
+userSchema.statics.findByAuthentication = function(authentication) {
+  return this.findOne({'authentication.provider': authentication.provider,
+    'authentication.id': authentication.id});
 };
 
-userSchema.statics.create = function(userData, callback){
+userSchema.statics.create = function(userData){
   var newUser = new this(userData);
   
-  newUser.save()
-    .then(function(newZiplink){
-    	callback(undefined, newZiplink);
-    }).catch(callback);
+  return newUser.save();
 };
 
 var User = connection.model('User', userSchema);
